@@ -3,7 +3,7 @@ use strict;
 use POSIX;
 
 ###five arguments required for this script###
-##argument 1: mut2func_info.csv file. This file contains seven lines. The first line contains the corresponding amino acid positions for each tile. The rest six lines contains the sequencing sample name for each multiplexed librarys sorted into each of the six experiments: nonselect1, nonselect2, select1, select2, wt1, wt2
+##argument 1: mut2func_info.csv file. This file contains seven lines. The first line contains the corresponding amino acid positions for each tile. The rest eight lines contains the sequencing sample name for each multiplexed librarys sorted into each of the six experiments: nonselect1, nonselect2, select1, select2, wtNonselect1, wtNonselect2, wtSelect1, wtSelect2
 ##argument 2: the path for the working directory 
 ##argument 3: geneName_seq.txt file
 
@@ -14,11 +14,13 @@ my $n_sub = 0;
 ###enter the sequencing depth used for normalization
 my $depth_norm = 1000000;
 
-###enter the experiment ID for each experiment from the first region to the last region
+###enter the experiment ID for each experiment from the first region to the last region and generate a output file for sequencing depth
 my %regions_nonpriming;
 my %exp;
 open(IF,$ARGV[0]) or die "can't open mut2func_info.csv file $!";
 my $exp_det = 0;
+open(my $fhdep,">$dir/resultfile/sequencingDepth.csv") or die $!;
+print $fhdep 'SampleID,SequencingDepth (million reads)',"\n";
 while(<IF>){
   chomp;
   my @a = split(/\,/,);
@@ -36,54 +38,141 @@ while(<IF>){
   if($first eq 'nonselect1'){
     $exp_det ++;
     foreach my $exp (@a) {
+      my $filename = $exp.'report.txt';
+      open(ID,"<$dir/mutationCallfile/$filename") or die "can't open $filename $!";
+      while(<ID>){
+        if(/depth/){
+          my @a = split;
+          print $fhdep "SampleID$exp\_NS1\,$a[4]\n";
+        }
+      }
+      close ID;
       push(@{$exp{1}},$exp); 
     }
   }
   if($first eq 'nonselect2'){
     $exp_det ++;
     foreach my $exp (@a) {
+      my $filename = $exp.'report.txt';
+      open(ID,"<$dir/mutationCallfile/$filename") or die "can't open $filename $!";
+      while(<ID>){
+        if(/depth/){
+          my @a = split;
+          print $fhdep "SampleID$exp\_NS2\,$a[4]\n";
+        }
+      }
+      close ID;
       push(@{$exp{2}},$exp); 
     }
   }
   if($first eq 'select1'){
     $exp_det ++;
     foreach my $exp (@a) {
+      my $filename = $exp.'report.txt';
+      open(ID,"<$dir/mutationCallfile/$filename") or die "can't open $filename $!";      
+      while(<ID>){
+        if(/depth/){
+          my @a = split;
+          print $fhdep "SampleID$exp\_S1\,$a[4]\n";
+        }
+      }
+      close ID;
       push(@{$exp{3}},$exp); 
     }
   }
   if($first eq 'select2'){
     $exp_det ++;
     foreach my $exp (@a) {
+      my $filename = $exp.'report.txt';
+      open(ID,"<$dir/mutationCallfile/$filename") or die "can't open $filename $!";      
+      while(<ID>){
+        if(/depth/){
+          my @a = split;
+          print $fhdep "SampleID$exp\_S2\,$a[4]\n";
+        }
+      }
+      close ID;
       push(@{$exp{4}},$exp); 
     }
   }
-  if($first eq 'wt1'){
+  if($first eq 'wtNonselect1'){
     $exp_det ++;
     foreach my $exp (@a) {
+      my $filename = $exp.'report.txt';
+      open(ID,"<$dir/mutationCallfile/$filename") or die "can't open $filename $!";      
+      while(<ID>){
+        if(/depth/){
+          my @a = split;
+          print $fhdep "SampleID$exp\_NONSELECTWT1\,$a[4]\n";
+        }
+      }
+      close ID;
       push(@{$exp{5}},$exp); 
     }
   }
-  if($first eq 'wt2'){
+  if($first eq 'wtNonselect2'){
     $exp_det ++;
     foreach my $exp (@a) {
+      my $filename = $exp.'report.txt';
+      open(ID,"<$dir/mutationCallfile/$filename") or die "can't open $filename $!";      
+      while(<ID>){
+        if(/depth/){
+          my @a = split;
+          print $fhdep "SampleID$exp\_NONSELECTWT2\,$a[4]\n";
+        }
+      }
+      close ID;
       push(@{$exp{6}},$exp); 
+    }
+  }
+  if($first eq 'wtSelect1'){
+    $exp_det ++;
+    foreach my $exp (@a) {
+      my $filename = $exp.'report.txt';
+      open(ID,"<$dir/mutationCallfile/$filename") or die "can't open $filename $!";      
+      while(<ID>){
+        if(/depth/){
+          my @a = split;
+          print $fhdep "SampleID$exp\_SELECTWT1\,$a[4]\n";
+        }
+      }
+      close ID;
+      push(@{$exp{7}},$exp); 
+    }
+  }
+  if($first eq 'wtSelect2'){
+    $exp_det ++;
+    foreach my $exp (@a) {
+      my $filename = $exp.'report.txt';
+      open(ID,"<$dir/mutationCallfile/$filename") or die "can't open $filename $!";      
+      while(<ID>){
+        if(/depth/){
+          my @a = split;
+          print $fhdep "SampleID$exp\_SELECTWT2\,$a[4]\n";
+        }
+      }
+      close ID;
+      push(@{$exp{8}},$exp); 
     }
   }
 }
 close IF;
+close $fhdep;
 
-if($exp_det == 6){
+if($exp_det == 8){
   ###assign experiment ID arrays to a hash
   my @exp1 = @{$exp{1}}; ##for nonselect1
   my @exp2 = @{$exp{2}}; ##for nonselect2
   my @exp3 = @{$exp{3}}; ##for select1
   my @exp4 = @{$exp{4}}; ##for select2
-  my @exp5 = @{$exp{5}}; ##for wt1
-  my @exp6 = @{$exp{6}}; ##for wt2
+  my @exp5 = @{$exp{5}}; ##for nonselectwt1
+  my @exp6 = @{$exp{6}}; ##for nonselectwt2
+  my @exp7 = @{$exp{7}}; ##for selectwt1
+  my @exp8 = @{$exp{8}}; ##for selectwt2
   my $n_regions = @exp1;
   ###generate nonpriming region for each experiment and store in a hash
   my %nonPrimingRegion;
-  for(my $i=1; $i<=6; $i++){
+  for(my $i=1; $i<=8; $i++){
     for(my $j=1; $j<=$n_regions; $j++){
       my @expID = @{$exp{$i}};
       my @region = @{$regions_nonpriming{$j}};
@@ -106,12 +195,19 @@ my %select2;
 my %average_select;
 my %sd_select;
 
-my %control1raw;
-my %control2raw;
-my %control1;
-my %control2;
-my %average_control;
-my %sd_control;
+my %controlNS1raw;
+my %controlNS2raw;
+my %controlNS1;
+my %controlNS2;
+my %average_controlNS;
+my %sd_controlNS;
+
+my %controlS1raw;
+my %controlS2raw;
+my %controlS1;
+my %controlS2;
+my %average_controlS;
+my %sd_controlS;
 
 #####################################################
 ###open directory and read all file names in an array, then read each file and assign six hashes for nonselective, selective and control experiments
@@ -174,25 +270,42 @@ foreach my $filename (@filenames){
         }
       }
       
-      ###for wt-control replicate 1
+      ###for wt-control Nonselect replicate 1
       if($expID[0] ~~ @exp5){
         if($pos ~~ [$region[0]..$region[1]]){
-          $control1{$mut} += $count;
-          $control1raw{$mut_codon} += $countraw;
+          $controlNS1{$mut} += $count;
+          $controlNS1raw{$mut_codon} += $countraw;
         }
       }
       
-      ###for wt-control replicate 2
+      ###for wt-control Nonselect replicate 2
       if($expID[0] ~~ @exp6){
         if($pos ~~ [$region[0]..$region[1]]){
-          $control2{$mut} += $count;
-          $control2raw{$mut_codon} += $countraw;
+          $controlNS2{$mut} += $count;
+          $controlNS2raw{$mut_codon} += $countraw;
+        }
+      }
+      
+      ###for wt-control select replicate 1
+      if($expID[0] ~~ @exp7){
+        if($pos ~~ [$region[0]..$region[1]]){
+          $controlS1{$mut} += $count;
+          $controlS1raw{$mut_codon} += $countraw;
+        }
+      }
+      
+      ###for wt-control select replicate 2
+      if($expID[0] ~~ @exp8){
+        if($pos ~~ [$region[0]..$region[1]]){
+          $controlS2{$mut} += $count;
+          $controlS2raw{$mut_codon} += $countraw;
         }
       }
     }
     close IM;
    }
   }
+  
 }
 #####################################################
 
@@ -216,14 +329,23 @@ foreach my $mut (keys %select1){
 }
 close $fhpost;
 
-open(my $fhctr,">$dir/resultfile/correlation_control.txt") or die $!;
-print $fhctr "control1\tcontrol2\n";
-foreach my $mut (keys %control1){
-  if($control2{$mut}){
-    print $fhctr "$control1{$mut}\t$control2{$mut}\n";
+open(my $fhctrNS,">$dir/resultfile/correlation_controlNS.txt") or die $!;
+print $fhctrNS "controlNS1\tcontrolNS2\n";
+foreach my $mut (keys %controlNS1){
+  if($controlNS2{$mut}){
+    print $fhctrNS "$controlNS1{$mut}\t$controlNS2{$mut}\n";
   }
 }
-close $fhctr;
+close $fhctrNS;
+
+open(my $fhctrS,">$dir/resultfile/correlation_controlS.txt") or die $!;
+print $fhctrS "controlS1\tcontrolS2\n";
+foreach my $mut (keys %controlS1){
+  if($controlS2{$mut}){
+    print $fhctrS "$controlS1{$mut}\t$controlS2{$mut}\n";
+  }
+}
+close $fhctrS;
 ####################################################
 
 ####################################################
@@ -243,15 +365,20 @@ foreach my $mut_codon (keys %select1raw){
 foreach my $mut_codon (keys %select2raw){
   $hash_all{$mut_codon} = 0;
 }
-foreach my $mut_codon (keys %control1raw){
+foreach my $mut_codon (keys %controlNS1raw){
   $hash_all{$mut_codon} = 0;
 }
-foreach my $mut_codon (keys %control2raw){
+foreach my $mut_codon (keys %controlNS2raw){
+  $hash_all{$mut_codon} = 0;
+}
+foreach my $mut_codon (keys %controlS1raw){
+  $hash_all{$mut_codon} = 0;
+}
+foreach my $mut_codon (keys %controlS2raw){
   $hash_all{$mut_codon} = 0;
 }
 
-
-print $fhraw "wt_aa\tpos\tmut_aa\twt_codon\tmut_codon\tannotation\tnonselect1\tnonselect2\tselect1\tselect2\tcontrol1\tcontrol2\n";
+print $fhraw "wt_aa\tpos\tmut_aa\twt_codon\tmut_codon\tannotation\tnonselect1\tnonselect2\tselect1\tselect2\tcontrolNS1\tcontrolNS2\tcontrolS1\tcontrolS2\n";
 foreach my $mut_codon (keys %hash_all){
   print $fhraw "$mut_codon\t";
   if($nonselect1raw{$mut_codon}){
@@ -274,13 +401,23 @@ foreach my $mut_codon (keys %hash_all){
   }else{
     print $fhraw "0\t";
   }
-  if($control1raw{$mut_codon}){
-    print $fhraw $control1raw{$mut_codon},"\t";
+  if($controlNS1raw{$mut_codon}){
+    print $fhraw $controlNS1raw{$mut_codon},"\t";
   }else{
     print $fhraw "0\t";
   }
-  if($control2raw{$mut_codon}){
-    print $fhraw $control2raw{$mut_codon},"\n";
+  if($controlNS2raw{$mut_codon}){
+    print $fhraw $controlNS2raw{$mut_codon},"\t";
+  }else{
+    print $fhraw "0\t";
+  }
+  if($controlS1raw{$mut_codon}){
+    print $fhraw $controlS1raw{$mut_codon},"\t";
+  }else{
+    print $fhraw "0\t";
+  }
+  if($controlS2raw{$mut_codon}){
+    print $fhraw $controlS2raw{$mut_codon},"\n";
   }else{
     print $fhraw "0\n";
   }
@@ -294,22 +431,21 @@ foreach my $mut (keys %nonselect1){
     if($nonselect2{$mut}){
       $average_nonselect{$mut} = ($nonselect1{$mut}+$nonselect2{$mut})/2;
       $sd_nonselect{$mut} = stdev(($nonselect1{$mut},$nonselect2{$mut}));
-    }
-}
-
-foreach my $mut (keys %select1){
-    if($select2{$mut}){
+      if(!$select1{$mut}){$select1{$mut}=0;}
+      if(!$select2{$mut}){$select2{$mut}=0;}
+      if(!$controlNS1{$mut}){$controlNS1{$mut}=0;}
+      if(!$controlNS2{$mut}){$controlNS2{$mut}=0;}
+      if(!$controlS1{$mut}){$controlS1{$mut}=0;}
+      if(!$controlS2{$mut}){$controlS2{$mut}=0;}
       $average_select{$mut} = ($select1{$mut}+$select2{$mut})/2;
       $sd_select{$mut} = stdev(($select1{$mut},$select2{$mut}));
+      $average_controlNS{$mut} = ($controlNS1{$mut}+$controlNS2{$mut})/2;
+      $sd_controlNS{$mut} = stdev(($controlNS1{$mut},$controlNS2{$mut}));
+      $average_controlS{$mut} = ($controlS1{$mut}+$controlS2{$mut})/2;
+      $sd_controlS{$mut} = stdev(($controlS1{$mut},$controlS2{$mut}));
     }
 }
 
-foreach my $mut (keys %control1){
-    if($control2{$mut}){
-      $average_control{$mut} = ($control1{$mut}+$control2{$mut})/2;
-      $sd_control{$mut} = stdev(($control1{$mut},$control2{$mut}));
-    }
-}
 #####################################################
 
 #####################################################
@@ -324,33 +460,19 @@ my %sd_nonselect_sub;
 my %sd_select_sub;
 
 foreach my $mut (keys %average_nonselect){
-  if($average_select{$mut}){
-    if($average_control{$mut}){
-      if((3*$sd_control{$mut}+$average_control{$mut}) < $average_nonselect{$mut} && (3*$sd_control{$mut}+$average_control{$mut}) < $average_select{$mut}){
-        $nonselect1_sub{$mut} = $nonselect1{$mut} - $average_control{$mut};
-        $nonselect2_sub{$mut} = $nonselect2{$mut} - $average_control{$mut};
-        $nonselect_sub{$mut} = $average_nonselect{$mut} - $average_control{$mut};
-        $select1_sub{$mut} = $select1{$mut} - $average_control{$mut};
-        $select2_sub{$mut} = $select2{$mut} - $average_control{$mut};
-        $select_sub{$mut} = $average_select{$mut} - $average_control{$mut};
-        my @nonselect = ($nonselect1{$mut},$nonselect2{$mut});
-        my @select = ($select1{$mut},$select2{$mut});
-        my @control = ($control1{$mut},$control2{$mut});
-      
-        $sd_nonselect_sub{$mut} = ($sd_nonselect{$mut}**2 + $sd_control{$mut}**2 )**0.5;
-        $sd_select_sub{$mut} = ($sd_select{$mut}**2 + $sd_control{$mut}**2 )**0.5;
-      }
-    }else{
-      $nonselect_sub{$mut} = $average_nonselect{$mut};
-      $nonselect1_sub{$mut} = $nonselect1{$mut};
-      $nonselect2_sub{$mut} = $nonselect2{$mut};
-      $select_sub{$mut} = $average_select{$mut};
-      $select1_sub{$mut} = $select1{$mut};
-      $select2_sub{$mut} = $select2{$mut};
-      $sd_nonselect_sub{$mut} = $sd_nonselect{$mut};
-      $sd_select_sub{$mut} = $sd_select{$mut};
-    }
-  }
+  
+    ###calculate nonselect_sub
+    if($average_nonselect{$mut}>$average_controlNS{$mut}+3*$sd_controlNS{$mut}){
+      $nonselect_sub{$mut} = $average_nonselect{$mut} - $average_controlNS{$mut};   
+      $sd_nonselect_sub{$mut} = ($sd_nonselect{$mut}**2 + $sd_controlNS{$mut}**2 )**0.5;
+    }  
+   
+    ####calculate select_sub
+    if($average_select{$mut}+3*$sd_select{$mut}>=$average_controlNS{$mut}-3*$sd_controlNS{$mut}){
+      $select_sub{$mut} = abs($average_select{$mut} - $average_controlS{$mut});
+      $sd_select_sub{$mut} = ($sd_select{$mut}**2 + $sd_controlS{$mut}**2 )**0.5;
+    } 
+           
 }
 #####################################################
 
@@ -359,18 +481,29 @@ foreach my $mut (keys %average_nonselect){
 my %foldchange;
 my %sd_foldchange;
 foreach my $mut (keys %nonselect_sub){
-  $foldchange{$mut} = $select_sub{$mut}/$nonselect_sub{$mut};
-  my @nonselect_sub = ($nonselect1_sub{$mut},$nonselect2_sub{$mut});
-  my @select_sub = ($select1_sub{$mut},$select2_sub{$mut});
-  $sd_foldchange{$mut} = $foldchange{$mut}*((($sd_select_sub{$mut}/$select_sub{$mut})**2 + ($sd_nonselect_sub{$mut}/$nonselect_sub{$mut})**2)**0.5);
+  if($select_sub{$mut}){
+    $foldchange{$mut} = $select_sub{$mut}/$nonselect_sub{$mut};
+    if($select_sub{$mut}==0){
+      $sd_foldchange{$mut} = $sd_nonselect_sub{$mut};
+    }else{
+      $sd_foldchange{$mut} = $foldchange{$mut}*((($sd_select_sub{$mut}/$select_sub{$mut})**2 + ($sd_nonselect_sub{$mut}/$nonselect_sub{$mut})**2)**0.5);
+    }
+  }
 }
 
 open(my $fh,">$dir/resultfile/foldchange.txt") or die $!;
 print $fh "wt\tpos\tmut\tannotation\taverageNonselect\tsdNonselect\tcvNonselect\tsdSelect\tcvSelect\tsdFoldchange\tcvFoldchange\tfoldchange\n";
-foreach my $mut (keys %nonselect_sub){
+foreach my $mut (keys %foldchange){
   my $CVnonselect = $sd_nonselect_sub{$mut}/$nonselect_sub{$mut};
-  my $CVselect = $sd_select_sub{$mut}/$select_sub{$mut};
-  my $CVfoldchange = $sd_foldchange{$mut}/$foldchange{$mut};
+  my $CVselect;
+  my $CVfoldchange;
+  if($select_sub{$mut} != 0){
+    $CVselect = $sd_select_sub{$mut}/$select_sub{$mut};
+    $CVfoldchange = $sd_foldchange{$mut}/$foldchange{$mut};
+  }else{
+    $CVselect = 0;
+    $CVfoldchange = 0;
+  }
   if($nonselect_sub{$mut}>$n_sub){
     print $fh "$mut\t$nonselect_sub{$mut}\t$sd_nonselect_sub{$mut}\t$CVnonselect\t$sd_select_sub{$mut}\t$CVselect\t$sd_foldchange{$mut}\t$CVfoldchange\t$foldchange{$mut}\n";
   }  
@@ -457,7 +590,8 @@ for(my $i=0; $i<length($seq_nt)/3; $i++){
 my %allAAchange;
 my @allAA = ('A','V','L','I','M','F','Y','W','R','H','K','D','E','S','T','N','Q','G','C','P');
 my @region_last = @{$regions_nonpriming{$n_regions}};
-for(my $i=1; $i<=$region_last[1]; $i++){
+my @region_first = @{$regions_nonpriming{1}};
+for(my $i=$region_first[0]; $i<=$region_last[1]; $i++){
     my $aa_wt = substr($seq_AA,$i-1,1);
     foreach my $aa_sub (@allAA){
         if($aa_wt ne $aa_sub){
@@ -711,6 +845,8 @@ my $mutation_total=0;
 my $POP_total=0;
 
 print $fhfreq "region\tmut_freq\tdel_freq\tseq_depth (million reads)\n";
+my @start_aa;
+my @end_aa;
 for(my $i=1; $i<=$n_regions; $i++){
   my @region = @{$regions_nonpriming{$i}};
   my $seq_dep = $seqdep_nonpriming{$i};
@@ -778,9 +914,14 @@ for(my $i=1; $i<=$n_regions; $i++){
   my $seqdep_nonprim = sprintf("%.2g",$seqdep_nonpriming{$i});
   print $fhfreq $region[0],'~',$region[1],"\t$mut_counts\t$del_counts\t$seqdep_nonprim\n";
   $prob_noDel *= (1-$del_counts);
-  $length_aa += ($region[1]-$region[0]+1);
+  push(@start_aa,$region[0]);
+  push(@end_aa,$region[1]);
   
 }
+for(my $i=0; $i<$n_regions; $i++){
+  $length_aa += ($end_aa[$i]-$start_aa[$i]+1);
+}
+
 my $num_nonsyn_f100 = keys(%nonsyn_f100);
 my $num_nonsyn_f50 = keys(%nonsyn_f50);
 my $num_nonsyn_f = keys(%nonsyn_f);
@@ -798,6 +939,12 @@ foreach my $mut (keys %nonsyn_f){
   }
 }
 print $fhfreq "\n";
+print $fhfreq 'The measured regions are amino acid positions ';
+for(my $i=0; $i<$n_regions; $i++){
+  print $fhfreq $start_aa[$i],'-',$end_aa[$i],',';
+}
+print $fhfreq "\n";
+print $fhfreq 'The total number of possible AA changes is ', $length_aa*19,"\n";
 print $fhfreq "Average AA changes per clone\t",sprintf("%.2g",$f_nonsyn),"\n";
 print $fhfreq "Fraction of measured AA changes\t",sprintf("%.2g",$num_nonsyn_f/($length_aa*19)),"\n";
 print $fhfreq "Fraction of AA changes with >1 nt change\t",sprintf("%.2g",$POP_total/$mutation_total),"\n";
@@ -883,6 +1030,23 @@ close $fhland;
   die "the number of experiments is not correct";
 }
 
+
+##############################################################
+###define sub for median, takes in an array
+sub median
+{
+    my @vals = sort {$a <=> $b} @_;
+    my $len = @vals;
+    if($len%2) #odd?
+    {
+        return $vals[int($len/2)];
+    }
+    else #even
+    {
+        return ($vals[int($len/2)-1] + $vals[int($len/2)])/2;
+    }
+}
+##############################################################
 sub average{
         my @data = @_;
         if (not @data) {

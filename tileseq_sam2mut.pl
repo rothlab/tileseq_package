@@ -413,13 +413,115 @@ my %hash_AAC=();
 my %hash_AAC_multiple=();
 my %hash_DEL=();
 my %hash_INS=();
-my %hash_NON=();
+#my %hash_NON=();
 
 foreach my $key (keys %R1mut){
-  my @SNP; 
+#######call SNPs
+#######################################################################################################################  
   if($R2mut{$key}){
-    my @MUT_R1 = @{$R1mut{$key}};
-    my @MUT_R2 = @{$R2mut{$key}};
+   my @MUT_R1 = @{$R1mut{$key}};
+   my @MUT_R2 = @{$R2mut{$key}};
+   if(@MUT_R1 && @MUT_R2){
+    ##modify the $seq_ref
+    my $seq_ref = $gene_coding;
+    my $seq_mut1 = $seq_ref;
+    my $seq_mut2 = $seq_ref;
+    ####modify $seq_ref1
+    foreach (@MUT_R1){
+      my $det=0;
+      if($_ =~ /del/ || $_ =~/insert/){
+        $det++;
+      }else{
+        my $pos = substr($_,1,length($_)-2);
+        if($pos<=$length_up || $pos>length($gene_template)-$length_down){
+          $det++;
+        }
+      }
+      if($det==0){
+        my $pos = substr($_,1,length($_)-2)-$length_up;
+        my $nt_ref = substr($_,0,1);
+        my $nt_mut = substr($_,length($_)-1,1);
+        if($nt_ref eq substr($seq_ref,$pos-1,1)){
+          if($pos <= length($seq_ref)){
+              $seq_mut1 = substr($seq_mut1,0,$pos-1).$nt_mut.substr($seq_mut1,$pos,length($seq_mut1)-$pos);
+          }else{
+            print $fh $key,"\t","SNP position is out range","\n";
+          }
+        }else{
+          print $fh $key,"\t","ref nt is wrong","\n";
+        }
+      }  
+    }
+    ####modify $seq_ref2
+    foreach (@MUT_R2){
+      my $det=0;
+      if($_ =~ /del/ || $_ =~/insert/){
+        $det++;
+      }else{
+        my $pos = substr($_,1,length($_)-2);
+        if($pos<=$length_up || $pos>length($gene_template)-$length_down){
+          $det++;
+        }
+      }
+      if($det==0){
+        my $pos = substr($_,1,length($_)-2)-$length_up;
+        my $nt_ref = substr($_,0,1);
+        my $nt_mut = substr($_,length($_)-1,1);
+        if($nt_ref eq substr($seq_ref,$pos-1,1)){
+          if($pos <= length($seq_ref)){
+              $seq_mut2 = substr($seq_mut2,0,$pos-1).$nt_mut.substr($seq_mut2,$pos,length($seq_mut2)-$pos);
+          }else{
+            print $fh $key,"\t","SNP position is out range","\n";
+          }
+        }else{
+          print $fh $key,"\t","ref nt is wrong","\n";
+        }
+      }  
+    }
+        
+    ##translate the $seq_ref and $seq_mut1/$seq_mut2, and compare
+    if(length($seq_ref) == length($seq_mut1) && length($seq_ref) == length($seq_mut2)){
+      my $aarefs;
+      my $positions;
+      my $aamuts;
+      my $codonrefs;
+      my $codonmuts;
+      my $count=0;
+      for(my $i=0; $i<length($seq_ref)/3; $i++){
+          my $codon_ref = substr($seq_ref,$i*3,3);
+          my $codon_mut1 = substr($seq_mut1,$i*3,3);
+          my $codon_mut2 = substr($seq_mut2,$i*3,3);
+          my $aa_ref = &codon2aa($codon_ref);
+          my $aa_mut1 = &codon2aa($codon_mut1);
+          my $aa_mut2 = &codon2aa($codon_mut2);
+          if($codon_ref ne $codon_mut1 && $codon_ref ne $codon_mut2 && $codon_mut1 eq $codon_mut2){
+              my $aachange = $aa_ref."\t".($i+1)."\t".$aa_mut1."\t".$codon_ref."\t".$codon_mut1;
+              $hash_AAC{$aachange} += 1;
+              $count++;
+              $aarefs .= ($aa_ref.'|');
+              $positions .= (($i+1).'|');
+              $aamuts .= ($aa_mut1.'|');
+              $codonrefs .= ($codon_ref.'|');
+              $codonmuts .= ($codon_mut1.'|');  
+          }
+      }
+      if($count>1){
+        my $aachangeMultiple = $aarefs."\t".$positions."\t".$aamuts."\t".$codonrefs."\t".$codonmuts;
+        $hash_AAC_multiple{$aachangeMultiple} += 1;
+      } 
+    }else{
+      print $fh $key,"\t","ref modification error\n";
+    }
+   } 
+  }
+#######################################################################################################################  
+ 
+#######################################################################################################################  
+######call deletion and insertion#####
+  if($R2mut{$key}){
+   my @MUT_R1 = @{$R1mut{$key}};
+   my @MUT_R2 = @{$R2mut{$key}};
+   if(@MUT_R1 && @MUT_R2){
     my $deletions='';
     foreach my $mut1 (@MUT_R1){
       foreach my $mut2 (@MUT_R2){
@@ -433,13 +535,6 @@ foreach my $key (keys %R1mut){
             }
           }elsif($mut1 =~ /insert/){
             $hash_INS{substr($mut1,0,length($mut1)-7)."\t".'ins'."\t".substr($mut1,length($mut1)-1,1)} += 1;
-          }else{
-            my $pos = substr($mut1,1,length($mut1)-2);
-            if($pos<=$length_up || $pos>length($gene_template)-$length_down){
-              $hash_NON{$mut1} += 1;
-            }else{
-              push(@SNP,$mut1);
-            }
           }
         }
       }
@@ -447,61 +542,9 @@ foreach my $key (keys %R1mut){
     if($deletions){
       $hash_DEL{$deletions} += 1;
     }
+   } 
   }
-  
-  if(@SNP){
-    ##modify the $seq_ref
-    my $seq_ref = $gene_coding;
-    my $seq_mut = $seq_ref;
-    foreach (@SNP){
-      my $pos = substr($_,1,length($_)-2)-$length_up;
-      my $nt_ref = substr($_,0,1);
-      my $nt_mut = substr($_,length($_)-1,1);
-      if($nt_ref eq substr($seq_ref,$pos-1,1)){
-          if($pos <= length($seq_ref)){
-              $seq_mut = substr($seq_mut,0,$pos-1).$nt_mut.substr($seq_mut,$pos,length($seq_mut)-$pos);
-          }else{
-            print $fh $key,"\t","SNP position is out range","\n";
-          }
-      }else{
-          print $fh $key,"\t","ref nt is wrong","\n";
-      }
-            
-    }
-        
-    ##translate the $seq_ref and $seq_mut, and compare
-    if(length($seq_ref) == length($seq_mut)){
-      my $aarefs;
-      my $positions;
-      my $aamuts;
-      my $codonrefs;
-      my $codonmuts;
-      my $count=0;
-      for(my $i=0; $i<length($seq_ref)/3; $i++){
-          my $codon_ref = substr($seq_ref,$i*3,3);
-          my $codon_mut = substr($seq_mut,$i*3,3);
-          my $aa_ref = &codon2aa($codon_ref);
-          my $aa_mut = &codon2aa($codon_mut);
-          if($codon_ref ne $codon_mut){
-              my $aachange = $aa_ref."\t".($i+1)."\t".$aa_mut."\t".$codon_ref."\t".$codon_mut;
-              $hash_AAC{$aachange} += 1;
-              $count++;
-              $aarefs .= ($aa_ref.'|');
-              $positions .= (($i+1).'|');
-              $aamuts .= ($aa_mut.'|');
-              $codonrefs .= ($codon_ref.'|');
-              $codonmuts .= ($codon_mut.'|');  
-          }
-      }
-      if($count>1){
-        my $aachangeMultiple = $aarefs."\t".$positions."\t".$aamuts."\t".$codonrefs."\t".$codonmuts;
-        $hash_AAC_multiple{$aachangeMultiple} += 1;
-      } 
-    }else{
-      print $fh $key,"\t","ref modification error\n";
-    }
-  }
-  
+####################################################################################################################################### 
 }
 
 print $fh "The number of mapped R1 reads is: $n_mapped_R1\n";
@@ -529,13 +572,13 @@ my $fileNameAAchange = $experiment.'AAchange.txt';
 my $fileNameAAchangeMultiple = $experiment.'MultipleMut.txt';
 my $fileNameDel = $experiment.'deletion.txt';
 my $fileNameIns = $experiment.'insertion.txt';
-my $fileNameNon = $experiment.'noncoding.txt';
+#my $fileNameNon = $experiment.'noncoding.txt';
 
 open(my $AAchange, ">$destDirectory/$fileNameAAchange");
 open(my $AAchangeMultiple, ">$destDirectory/$fileNameAAchangeMultiple");
 open(my $deletion, ">$destDirectory/$fileNameDel");
 open(my $insertion, ">$destDirectory/$fileNameIns");
-open(my $noncoding, ">$destDirectory/$fileNameNon");
+#open(my $noncoding, ">$destDirectory/$fileNameNon");
 
 
 foreach my $mut (keys %hash_AAC){
@@ -550,15 +593,15 @@ foreach my $mut (keys %hash_DEL){
 foreach my $mut (keys %hash_INS){
   print $insertion "$mut\t",$hash_INS{$mut}/$depth,"\n";
 }
-foreach my $mut (keys %hash_NON){
-  print $noncoding "$mut\t",$hash_NON{$mut}/$depth,"\n";
-}
+#foreach my $mut (keys %hash_NON){
+  #print $noncoding "$mut\t",$hash_NON{$mut}/$depth,"\n";
+#}
 
 close $AAchange;
 close $AAchangeMultiple;
 close $deletion;
 close $insertion;
-close $noncoding;
+#close $noncoding;
 ######################################################################################################################
 
 sub codon2aa{
