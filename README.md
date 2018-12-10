@@ -1,4 +1,4 @@
-# TileSEQ Analysis Package v1.1 #
+# TileSEQ Analysis Package v1.5 #
 
 Song Sun, Roth Lab 2017
 
@@ -9,7 +9,7 @@ TileSEQ_FASTQ2Function.pl
 tileseq_mut2func.pl
 tileseq_sam2mut.pl
 and two example input files:
-UBE2I_seq.txt
+CBS_seq.txt
 mut2func_info.csv
 
 SunGridEngine, Perl and Bowtie2 are required to be installed. As this program makes use of high-performance cluster computing, it should only be executed on a suitable computing cluster with multiple nodes.
@@ -22,7 +22,7 @@ Create two input files for your own gene and experiments:
 
 <geneName>_seq.txt, where <geneName> is a placeholder for your gene name of choice (e.g. UBE2I). The file should contain the template sequence for the alignment and the coding sequence including a stop codon. The gene name should be spelled in captial letters. The file requires a specific format consisting of two lines: the first line is <geneName>_template followed by a space or tab and then the actual template sequence including the coding sequence and upstream/downstream sequences, the second line is <geneName>_coding followed by a space or tab and then the actual coding sequence.
 
-A file called mut2func_info.csv, which contains seven lines. The first line contains the corresponding amino acid positions for each tile. The rest six lines contains the sequencing sample name for each multiplexed librarys sorted into each of the six experiments: nonselect1, nonselect2, select1, select2, wt1, wt2.
+A file called mut2func_info.csv, which contains seven lines. The first line contains the corresponding amino acid positions for each tile. The rest six lines contains the sequencing sample name for each multiplexed librarys sorted into each of the six experiments: nonselect1, nonselect2, select1, select2, wt1, wt2. Note: for quality check, the mut2func_info.csv should only contain three lines including the first line with tile information, and two lines with sequencing sample name for nonselect1 and nonselect2 (in QC, nonselect1 and nonselect2 are the same)
 Run the control perl script TileSEQ_FASTQ2Function.pl after reading the doumentation in the beginning of the script. Three arguments are required for this script.
 
 * The gene name, e.g. UBE2I
