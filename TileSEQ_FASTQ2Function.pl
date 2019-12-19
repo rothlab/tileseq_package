@@ -2,6 +2,12 @@
 use strict;
 use Cwd qw();
 
+# LAST edit: 2019.10.11
+# LAST edited by: Roujia Li
+
+# this script takes fastq files that are not separated into different lanes
+# i.e only L001 for each fastq file
+
 #required files (need to be in the same directory)
 ##file 1: geneName_seq.txt 
 ###file 1 description: a txt file containing template sequence for alignment and coding sequence including stop codon, the file name needs to be exactly "geneName_seq.txt" (geneName in captial letter), the file is required to have a specific format containing two lines: the first line is 'geneName_template' followed by a space or tab and then the actual template sequence including the coding sequence and upstream/downstream sequences, the second line is 'geneName_coding' followed by a space or tab and then the actual coding sequence

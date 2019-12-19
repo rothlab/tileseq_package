@@ -2,13 +2,22 @@
 use strict;
 use Cwd qw();
 
+# LAST edit: 2019.10.11
+# LAST edited by: Roujia Li
+
+# min match = 130
+# if the targeted region is shorter in lenth
+# change this number accordingly
+# on LINE 107 AND LINE 280 change
+# if($totalMatch < $totalMisMatch || $totalMatch < $min_match)
+# to if($totalMatch < $min_match)
+
 ###five arguments required for this script###
 ##argument 1: sam file for read 1
 ##argument 2: sam file for read 2
 ##argument 3: a txt file containing template sequence for alignment and coding sequence including stop codon, the file name needs to be exactly "geneName_seq.txt" (geneName in captial letter), the file is required to have a specific format containing two lines: the first line is 'geneName_template' followed by a space or tab and then the actual template sequence including the coding sequence and upstream/downstream sequences, the second line is 'geneName_coding' followed by a space or tab and then the actual coding sequence
 ##argument 4: phred score threshold 
 ##argument 5: the path for the directory where the mutation call files are saved
-
 
 #######enter the template sequence (including upstream and downstream sequence),coding sequence, length of upstream and downstream sequences, desired quality score and the expected aligned fragment, and set the output directory
 my $gene_template;
