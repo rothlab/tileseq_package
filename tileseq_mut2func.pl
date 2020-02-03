@@ -882,7 +882,7 @@ my $mutation_total=0;
 my $POP_total=0;
 
 my $onent_total=0;
-my f_nonsen=1;
+my $f_nonsen=1;
 print $fhfreq "Tiles\tMut_freq\tDel_freq\tSequencing_depth (thousands reads)\n";
 my @start_aa;
 my @end_aa;
