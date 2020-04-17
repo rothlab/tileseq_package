@@ -16,7 +16,7 @@ use Cwd qw();
 ##argument 1: sam file for read 1
 ##argument 2: sam file for read 2
 ##argument 3: a txt file containing template sequence for alignment and coding sequence including stop codon, the file name needs to be exactly "geneName_seq.txt" (geneName in captial letter), the file is required to have a specific format containing two lines: the first line is 'geneName_template' followed by a space or tab and then the actual template sequence including the coding sequence and upstream/downstream sequences, the second line is 'geneName_coding' followed by a space or tab and then the actual coding sequence
-##argument 4: phred score threshold 
+##argument 4: phred score threshold
 ##argument 5: the path for the directory where the mutation call files are saved
 
 #######enter the template sequence (including upstream and downstream sequence),coding sequence, length of upstream and downstream sequences, desired quality score and the expected aligned fragment, and set the output directory
@@ -48,7 +48,7 @@ close IG;
 if($det!=2){
   die "input sequence file format is wrong";
 }
- 
+
 my $length_up = index($gene_template,$gene_coding);
 my $length_down = index(reverse($gene_template),reverse($gene_coding))+3;
 my $threshold_qual = "$ARGV[3]"; ##defaul value would be 20
@@ -76,22 +76,28 @@ my $n_mapped_R2 = 0;
 my $n_unmapped_R2 = 0;
 my $n_mappedLow_R2 = 0;
 
+# Go through mutations in R1
 my %R1mut;
 while(<IM>){
   my @a = split;
   my $length = @a;
-  
+
   if($a[2] ne $alignedFragment){
     #print $fh 'R1',"\t",$a[0],"\t",'wrongORpoorMapping:',$a[2],"\n";
     $n_unmapped_R1++;
     next;
   }
   ####exclude those reads with more mismatches###
+  # Need to remove this because sometimes the reads are short due to sequencing
+  # issues, we can still call mutations from the reads
+  # also happens when the tile is short and most of the reads got clipped
   my @match = split(/\d+D|\d+S|\d+I/,$a[5]);
   my $totalMatch = 0;
   foreach my $mat (@match){
     if($mat){
       if(substr($mat,-1,1) eq 'M'){
+        ## substr() in Perl returns a substring out of the string passed to the
+        # function starting from a given index up to the length specified
         $totalMatch += substr($mat,0,length($mat)-1);
       }
     }
@@ -105,41 +111,44 @@ while(<IM>){
       }
     }
   }
-    
+
   if($totalMatch < $totalMisMatch || $totalMatch < $min_match){
     $n_unmapped_R1++;
     next;
   }
   ######################################
+
+  # if there is less than 19 field in sam entry
   if($length<19){
     $n_mappedLow_R1++;
     next;
   }
-  
+
   $n_mapped_R1++;
+
   ##parse cigar and quality score
   my @CIGAR = split(/\d+S/,$a[5]);
   my $clipedCIGAR = $CIGAR[@CIGAR-1];
-  
+
   my @pos_cigar = split(/M|D|I/,$clipedCIGAR);
   my @flag_cigar = split(/\d+/,$clipedCIGAR);
-  
+
   ##modify query sequence and quality score
   my $seq = $a[9];
   my $qual = $a[10];
-  
-  ###cliping $seq and $qual
+
+  ###cliping $seq and $qual if the read is soft clipped
   if(substr($a[5],1,1) eq 'S'){
     $seq = substr($seq,substr($a[5],0,1),length($seq)-substr($a[5],0,1));
     $qual = substr($qual,substr($a[5],0,1),length($qual)-substr($a[5],0,1));
   }
-  
   if(substr($a[5],length($a[5])-1,1) eq 'S'){
     $seq = substr($seq,0,length($seq)-substr($a[5],length($a[5])-2,1));
     $qual = substr($qual,0,length($qual)-substr($a[5],length($a[5])-2,1));
-  }  
-  
-  ###modify based on insertion and deletion
+  }
+
+  ### modify based on insertion and deletion
+
   my $position = 0;
   my $insert='';
   for(my $k=0; $k<@pos_cigar; $k++){
@@ -148,10 +157,14 @@ while(<IM>){
     }
     if($flag_cigar[$k+1] eq 'D'){
       for(my $i=0; $i<$pos_cigar[$k]; $i++){
+        ## substr() in Perl returns a substring out of the string passed to the
+        # function starting from a given index up to the length specified
+        # question: this means that whenever there is a deletion the deleted len is always 1?
+        # . in perl is for string concatenation
         $seq = substr($seq,0,$position).'D'.substr($seq,$position,length($seq)-$position);
         $qual = substr($qual,0,$position).'D'.substr($qual,$position,length($qual)-$position);
         $position ++;
-      }  
+      }
     }
     if($flag_cigar[$k+1] eq 'I'){
       my $pos_insert = $position+$a[3]-1;
@@ -163,9 +176,9 @@ while(<IM>){
       }
       $seq = substr($seq,0,$position).substr($seq,$position+$pos_cigar[$k],length($seq)-$position-$pos_cigar[$k]);
       $qual = substr($qual,0,$position).substr($qual,$position+$pos_cigar[$k],length($qual)-$position-$pos_cigar[$k]);
-    }    
-  }  
-  
+    }
+  }
+
   ##parse MD:Z:
   if($a[$length-2] =~ /MD:Z:/){
     my $seqID = $a[0];
@@ -179,7 +192,7 @@ while(<IM>){
     my @mismatch = split(/\d+/,$MDZ);
     my $lengthMatch = @match; ###the first element is "" if the MDZ string starts with a letter
     my $lengthMismatch = @mismatch; ###the first element is "" if the MDZ string starts with a number
-    
+
     if(substr($MDZ,0,1) =~ /\d/){
       my $pos = 0;
       for(my $i=0; $i<$lengthMismatch-1; $i++){
@@ -190,8 +203,10 @@ while(<IM>){
           $pos++;
           my $phred = ord(substr($qual,$pos-1,1))-33;
           if($phred >= $threshold_qual){
+            ## push() function in Perl is used to push a list of values onto the end of the array
+            # push(array, list)
             push(@mut,$mismatch[$i+1].($pos+$a[3]-1).substr($seq,$pos-1,1));
-          }  
+          }
         }else{
           for(my $m=1; $m<length($mismatch[$i+1]); $m++){
             $pos++;
@@ -199,8 +214,8 @@ while(<IM>){
             my $phred2 = ord(substr($qual,$pos,1))-33;
             if($phred1 >= $threshold_qual && $phred2 >= $threshold_qual){
               push(@mut,($pos+$a[3]-1).'del'.substr($mismatch[$i+1],$m,1));
-            }  
-          }  
+            }
+          }
         }
       }
       if($insert){
@@ -214,16 +229,18 @@ while(<IM>){
           my $phred = ord(substr($qual,$pos-1,1))-33;
           if($phred >= $threshold_qual){
             push(@mut,$mismatch[$i].($pos+$a[3]-1).substr($seq,$pos-1,1));
-          }  
+          }
         }else{
+          # this part is for deletion?
+          # why checking quality score for deletion?
           for(my $m=1; $m<length($mismatch[$i]); $m++){
             $pos++;
             my $phred1 = ord(substr($qual,$pos-2,1))-33;
             my $phred2 = ord(substr($qual,$pos,1))-33;
-            if($phred1 >= $threshold_qual && $phred2 >= $threshold_qual){             
+            if($phred1 >= $threshold_qual && $phred2 >= $threshold_qual){
               push(@mut,($pos+$a[3]-1).'del'.substr($mismatch[$i],$m,1));
             }
-          }  
+          }
         }
         if($match[$i+1] =~ /\d/){
           $pos += $match[$i+1];
@@ -237,9 +254,9 @@ while(<IM>){
         push(@mut,$insert);
       }
     }
-    
+
     $R1mut{$seqID} = [@mut];
-    
+
   }else{print $fh 'R1',"\t",$a[0],"\t",'No MD:Z:',"\n";}
 }
 close IM;
@@ -250,7 +267,7 @@ my %R2mut;
 while(<IN>){
   my @a = split;
   my $length = @a;
-  
+
   if($a[2] ne $alignedFragment){
     $n_unmapped_R2++;
     #print $fh 'R2',"\t",$a[0],"\t",'wrongORpoorMapping:',$a[2],"\n";
@@ -275,7 +292,7 @@ while(<IN>){
       }
     }
   }
-    
+
   if($totalMatch < $totalMisMatch || $totalMatch < $min_match){
     $n_unmapped_R2++;
     next;
@@ -285,30 +302,30 @@ while(<IN>){
     $n_mappedLow_R2++;
     next;
   }
-  
+
   $n_mapped_R2++;
   ##parse cigar and quality score
   my @CIGAR = split(/\d+S/,$a[5]);
   my $clipedCIGAR = $CIGAR[@CIGAR-1];
-  
+
   my @pos_cigar = split(/M|D|I/,$clipedCIGAR);
   my @flag_cigar = split(/\d+/,$clipedCIGAR);
-  
+
   ##modify query sequence and quality score
   my $seq = $a[9];
   my $qual = $a[10];
-  
+
   ###cliping $seq and $qual
   if(substr($a[5],1,1) eq 'S'){
     $seq = substr($seq,substr($a[5],0,1),length($seq)-substr($a[5],0,1));
     $qual = substr($qual,substr($a[5],0,1),length($qual)-substr($a[5],0,1));
   }
-  
+
   if(substr($a[5],length($a[5])-1,1) eq 'S'){
     $seq = substr($seq,0,length($seq)-substr($a[5],length($a[5])-2,1));
     $qual = substr($qual,0,length($qual)-substr($a[5],length($a[5])-2,1));
-  }  
-  
+  }
+
   ###modify based on insertion and deletion
   my $position = 0;
   my $insert='';
@@ -321,7 +338,7 @@ while(<IN>){
         $seq = substr($seq,0,$position).'D'.substr($seq,$position,length($seq)-$position);
         $qual = substr($qual,0,$position).'D'.substr($qual,$position,length($qual)-$position);
         $position ++;
-      }  
+      }
     }
     if($flag_cigar[$k+1] eq 'I'){
       my $pos_insert = $position+$a[3]-1;
@@ -333,9 +350,9 @@ while(<IN>){
       }
       $seq = substr($seq,0,$position).substr($seq,$position+$pos_cigar[$k],length($seq)-$position-$pos_cigar[$k]);
       $qual = substr($qual,0,$position).substr($qual,$position+$pos_cigar[$k],length($qual)-$position-$pos_cigar[$k]);
-    }    
-  }  
-  
+    }
+  }
+
   ##parse MD:Z:
   if($a[$length-2] =~ /MD:Z:/){
     my $seqID = $a[0];
@@ -349,7 +366,7 @@ while(<IN>){
     my @mismatch = split(/\d+/,$MDZ);
     my $lengthMatch = @match; ###the first element is "" if the MDZ string starts with a letter
     my $lengthMismatch = @mismatch; ###the first element is "" if the MDZ string starts with a number
-    
+
     if(substr($MDZ,0,1) =~ /\d/){
       my $pos = 0;
       for(my $i=0; $i<$lengthMismatch-1; $i++){
@@ -361,7 +378,7 @@ while(<IN>){
           my $phred = ord(substr($qual,$pos-1,1))-33;
           if($phred >= $threshold_qual){
             push(@mut,$mismatch[$i+1].($pos+$a[3]-1).substr($seq,$pos-1,1));
-          }  
+          }
         }else{
           for(my $m=1; $m<length($mismatch[$i+1]); $m++){
             $pos++;
@@ -369,8 +386,8 @@ while(<IN>){
             my $phred2 = ord(substr($qual,$pos,1))-33;
             if($phred1 >= $threshold_qual && $phred2 >= $threshold_qual){
               push(@mut,($pos+$a[3]-1).'del'.substr($mismatch[$i+1],$m,1));
-            }  
-          }  
+            }
+          }
         }
       }
       if($insert){
@@ -384,16 +401,16 @@ while(<IN>){
           my $phred = ord(substr($qual,$pos-1,1))-33;
           if($phred >= $threshold_qual){
             push(@mut,$mismatch[$i].($pos+$a[3]-1).substr($seq,$pos-1,1));
-          }  
+          }
         }else{
           for(my $m=1; $m<length($mismatch[$i]); $m++){
             $pos++;
             my $phred1 = ord(substr($qual,$pos-2,1))-33;
             my $phred2 = ord(substr($qual,$pos,1))-33;
-            if($phred1 >= $threshold_qual && $phred2 >= $threshold_qual){             
+            if($phred1 >= $threshold_qual && $phred2 >= $threshold_qual){
               push(@mut,($pos+$a[3]-1).'del'.substr($mismatch[$i],$m,1));
             }
-          }  
+          }
         }
         if($match[$i+1] =~ /\d/){
           $pos += $match[$i+1];
@@ -407,9 +424,9 @@ while(<IN>){
         push(@mut,$insert);
       }
     }
-    
+
     $R2mut{$seqID} = [@mut];
-    
+
   }else{print $fh 'R2',"\t",$a[0],"\t",'No MD:Z:',"\n";}
 }
 close IN;
@@ -425,8 +442,10 @@ my %hash_INS=();
 #my %hash_NON=();
 
 foreach my $key (keys %R1mut){
-#######call SNPs
-#######################################################################################################################  
+  # for each key in $R1mut
+  # if we also find key in R2 mut
+  # key means read id
+#######call SNPs#############################################################################################################
   if($R2mut{$key}){
    my @MUT_R1 = @{$R1mut{$key}};
    my @MUT_R2 = @{$R2mut{$key}};
@@ -436,8 +455,12 @@ foreach my $key (keys %R1mut){
     my $seq_mut1 = $seq_ref;
     my $seq_mut2 = $seq_ref;
     ####modify $seq_ref1
+    # go through all the SNPs in the list
+    # modify the sequence based on SNPs found in R1 and SNPs found in R2
     foreach (@MUT_R1){
       my $det=0;
+      # =~ means regex find
+      # if it's a deletion or insertion
       if($_ =~ /del/ || $_ =~/insert/){
         $det++;
       }else{
@@ -450,8 +473,9 @@ foreach my $key (keys %R1mut){
         my $pos = substr($_,1,length($_)-2)-$length_up;
         my $nt_ref = substr($_,0,1);
         my $nt_mut = substr($_,length($_)-1,1);
-        if($nt_ref eq substr($seq_ref,$pos-1,1)){
+        if($nt_ref eq substr($seq_ref,$pos-1,1)){ # check if mut nt is correct
           if($pos <= length($seq_ref)){
+              # mutated sequence = everything up to this pos + mut base + everything after
               $seq_mut1 = substr($seq_mut1,0,$pos-1).$nt_mut.substr($seq_mut1,$pos,length($seq_mut1)-$pos);
           }else{
             print $fh $key,"\t","SNP position is out range","\n";
@@ -459,7 +483,7 @@ foreach my $key (keys %R1mut){
         }else{
           print $fh $key,"\t","ref nt is wrong","\n";
         }
-      }  
+      }
     }
     ####modify $seq_ref2
     foreach (@MUT_R2){
@@ -485,10 +509,11 @@ foreach my $key (keys %R1mut){
         }else{
           print $fh $key,"\t","ref nt is wrong","\n";
         }
-      }  
+      }
     }
-        
+
     ##translate the $seq_ref and $seq_mut1/$seq_mut2, and compare
+    # compare SNP output from R1 and R2
     if(length($seq_ref) == length($seq_mut1) && length($seq_ref) == length($seq_mut2)){
       my $aarefs;
       my $positions;
@@ -497,12 +522,14 @@ foreach my $key (keys %R1mut){
       my $codonmuts;
       my $count=0;
       for(my $i=0; $i<length($seq_ref)/3; $i++){
-          my $codon_ref = substr($seq_ref,$i*3,3);
-          my $codon_mut1 = substr($seq_mut1,$i*3,3);
-          my $codon_mut2 = substr($seq_mut2,$i*3,3);
-          my $aa_ref = &codon2aa($codon_ref);
-          my $aa_mut1 = &codon2aa($codon_mut1);
-          my $aa_mut2 = &codon2aa($codon_mut2);
+          # go through the reference sequence 3bp at a time
+          my $codon_ref = substr($seq_ref,$i*3,3); # reference codon
+          my $codon_mut1 = substr($seq_mut1,$i*3,3); # mutated codon in R1
+          my $codon_mut2 = substr($seq_mut2,$i*3,3); # mutated codon in R2
+          my $aa_ref = &codon2aa($codon_ref); # translate ref codon to aa
+          my $aa_mut1 = &codon2aa($codon_mut1); # translate R1 ref codon to aa
+          my $aa_mut2 = &codon2aa($codon_mut2); # translate R2 ref codon to aa
+          # if codon in R1 codon != ref codon AND R2 codon != ref codon AND R1 codon == R2 codon
           if($codon_ref ne $codon_mut1 && $codon_ref ne $codon_mut2 && $codon_mut1 eq $codon_mut2){
               my $aachange = $aa_ref."\t".($i+1)."\t".$aa_mut1."\t".$codon_ref."\t".$codon_mut1;
               $hash_AAC{$aachange} += 1;
@@ -511,38 +538,40 @@ foreach my $key (keys %R1mut){
               $positions .= (($i+1).'|');
               $aamuts .= ($aa_mut1.'|');
               $codonrefs .= ($codon_ref.'|');
-              $codonmuts .= ($codon_mut1.'|');  
+              $codonmuts .= ($codon_mut1.'|');
           }
       }
-      if($count>1){
+      if($count>1){ # if there is more than one codon changes found
         my $aachangeMultiple = $aarefs."\t".$positions."\t".$aamuts."\t".$codonrefs."\t".$codonmuts;
         $hash_AAC_multiple{$aachangeMultiple} += 1;
-      } 
+      }
     }else{
       print $fh $key,"\t","ref modification error\n";
     }
-   } 
+   }
   }
-#######################################################################################################################  
- 
-#######################################################################################################################  
+#######################################################################################################################
+
+#######################################################################################################################
 ######call deletion and insertion#####
   if($R2mut{$key}){
    my @MUT_R1 = @{$R1mut{$key}};
    my @MUT_R2 = @{$R2mut{$key}};
    if(@MUT_R1 && @MUT_R2){
     my $deletions='';
-    foreach my $mut1 (@MUT_R1){
+    foreach my $mut1 (@MUT_R1){ # for each mutation in R1 find the same mut in R2
       foreach my $mut2 (@MUT_R2){
         if($mut1 eq $mut2){
           if($mut1 =~ /del/){
             my $pos = substr($mut1,0,length($mut1)-4);
             my $ntDEL = substr($mut1,length($mut1)-1,1);
             if($ntDEL eq substr($gene_template,$pos-1,1)){
+              # deletions = pos + del + $ntDEL
               $deletions .= substr($mut1,0,length($mut1)-4).'del'.substr($mut1,length($mut1)-1,1);
               ##$hash_DEL{substr($mut1,0,length($mut1)-4)."\t".'del'."\t".substr($mut1,length($mut1)-1,1)} += 1;
             }
           }elsif($mut1 =~ /insert/){
+            # insertion = pos + ins + ntINS
             $hash_INS{substr($mut1,0,length($mut1)-7)."\t".'ins'."\t".substr($mut1,length($mut1)-1,1)} += 1;
           }
         }
@@ -551,9 +580,9 @@ foreach my $key (keys %R1mut){
     if($deletions){
       $hash_DEL{$deletions} += 1;
     }
-   } 
+   }
   }
-####################################################################################################################################### 
+#######################################################################################################################################
 }
 
 print $fh "The number of mapped R1 reads is: $n_mapped_R1\n";

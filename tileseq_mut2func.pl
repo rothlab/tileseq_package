@@ -7,7 +7,7 @@ use POSIX;
 
 ###five arguments required for this script###
 ##argument 1: mut2func_info.csv file. This file contains seven lines. The first line contains the corresponding amino acid positions for each tile. The rest eight lines contains the sequencing sample name for each multiplexed librarys sorted into each of the six experiments: nonselect1, nonselect2, select1, select2, wtNonselect1, wtNonselect2, wtSelect1, wtSelect2
-##argument 2: the path for the working directory 
+##argument 2: the path for the working directory
 ##argument 3: geneName_seq.txt file
 
 ######get the directory path where the AAchange.txt files are stored
@@ -51,7 +51,7 @@ while(<IF>){
         }
       }
       close ID;
-      push(@{$exp{1}},$exp); 
+      push(@{$exp{1}},$exp);
     }
   }
   if($first eq 'nonselect2'){
@@ -66,14 +66,14 @@ while(<IF>){
         }
       }
       close ID;
-      push(@{$exp{2}},$exp); 
+      push(@{$exp{2}},$exp);
     }
   }
   if($first eq 'select1'){
     $exp_det ++;
     foreach my $exp (@a) {
       my $filename = $exp.'report.txt';
-      open(ID,"<$dir/mutationCallfile/$filename") or die "can't open $filename $!";      
+      open(ID,"<$dir/mutationCallfile/$filename") or die "can't open $filename $!";
       while(<ID>){
         if(/depth/){
           my @a = split;
@@ -81,14 +81,14 @@ while(<IF>){
         }
       }
       close ID;
-      push(@{$exp{3}},$exp); 
+      push(@{$exp{3}},$exp);
     }
   }
   if($first eq 'select2'){
     $exp_det ++;
     foreach my $exp (@a) {
       my $filename = $exp.'report.txt';
-      open(ID,"<$dir/mutationCallfile/$filename") or die "can't open $filename $!";      
+      open(ID,"<$dir/mutationCallfile/$filename") or die "can't open $filename $!";
       while(<ID>){
         if(/depth/){
           my @a = split;
@@ -96,14 +96,14 @@ while(<IF>){
         }
       }
       close ID;
-      push(@{$exp{4}},$exp); 
+      push(@{$exp{4}},$exp);
     }
   }
   if($first eq 'wtNonselect1'){
     $exp_det ++;
     foreach my $exp (@a) {
       my $filename = $exp.'report.txt';
-      open(ID,"<$dir/mutationCallfile/$filename") or die "can't open $filename $!";      
+      open(ID,"<$dir/mutationCallfile/$filename") or die "can't open $filename $!";
       while(<ID>){
         if(/depth/){
           my @a = split;
@@ -111,14 +111,14 @@ while(<IF>){
         }
       }
       close ID;
-      push(@{$exp{5}},$exp); 
+      push(@{$exp{5}},$exp);
     }
   }
   if($first eq 'wtNonselect2'){
     $exp_det ++;
     foreach my $exp (@a) {
       my $filename = $exp.'report.txt';
-      open(ID,"<$dir/mutationCallfile/$filename") or die "can't open $filename $!";      
+      open(ID,"<$dir/mutationCallfile/$filename") or die "can't open $filename $!";
       while(<ID>){
         if(/depth/){
           my @a = split;
@@ -126,14 +126,14 @@ while(<IF>){
         }
       }
       close ID;
-      push(@{$exp{6}},$exp); 
+      push(@{$exp{6}},$exp);
     }
   }
   if($first eq 'wtSelect1'){
     $exp_det ++;
     foreach my $exp (@a) {
       my $filename = $exp.'report.txt';
-      open(ID,"<$dir/mutationCallfile/$filename") or die "can't open $filename $!";      
+      open(ID,"<$dir/mutationCallfile/$filename") or die "can't open $filename $!";
       while(<ID>){
         if(/depth/){
           my @a = split;
@@ -141,14 +141,14 @@ while(<IF>){
         }
       }
       close ID;
-      push(@{$exp{7}},$exp); 
+      push(@{$exp{7}},$exp);
     }
   }
   if($first eq 'wtSelect2'){
     $exp_det ++;
     foreach my $exp (@a) {
       my $filename = $exp.'report.txt';
-      open(ID,"<$dir/mutationCallfile/$filename") or die "can't open $filename $!";      
+      open(ID,"<$dir/mutationCallfile/$filename") or die "can't open $filename $!";
       while(<ID>){
         if(/depth/){
           my @a = split;
@@ -156,7 +156,7 @@ while(<IF>){
         }
       }
       close ID;
-      push(@{$exp{8}},$exp); 
+      push(@{$exp{8}},$exp);
     }
   }
 }
@@ -220,7 +220,7 @@ my @filenames = readdir $dh;
 closedir $dh;
 
 foreach my $filename (@filenames){
-  if($filename =~ /\S+AAchange.txt/){
+  if($filename =~ /\S+AAchange.txt/){ ## parse AA change file, it has all the codon changes from SNP
    my @expID = split(/AAchange/,$filename);
    if($nonPrimingRegion{$expID[0]}){
     open(IM,"$dir/mutationCallfile/$filename") or die "can't open file $filename $!";
@@ -230,6 +230,7 @@ foreach my $filename (@filenames){
       my $countraw = $a[5];
       my $pos = $a[1];
       my $mutationType;
+      ## assign mutation types to different mutations
       if($a[0] eq $a[2]){
         $mutationType = 'SYN';
       }elsif($a[2] eq '_'){
@@ -237,11 +238,11 @@ foreach my $filename (@filenames){
       }else{
         $mutationType = 'NONSYN';
       }
-      
+
       my $mut = $a[0]."\t".$a[1]."\t".$a[2]."\t".$mutationType;
       my $mut_codon = $a[0]."\t".$a[1]."\t".$a[2]."\t".$a[3]."\t".$a[4]."\t".$mutationType;
       my @region = @{$nonPrimingRegion{$expID[0]}};
-      
+
       ###for pre-select replicate 1
       if($expID[0] ~~ @exp1){
         if($pos ~~ [$region[0]..$region[1]]){
@@ -249,7 +250,7 @@ foreach my $filename (@filenames){
           $nonselect1raw{$mut_codon} += $countraw;
         }
       }
-      
+
       ###for pre-select replicate 2
       if($expID[0] ~~ @exp2){
         if($pos ~~ [$region[0]..$region[1]]){
@@ -257,7 +258,7 @@ foreach my $filename (@filenames){
           $nonselect2raw{$mut_codon} += $countraw;
         }
       }
-      
+
       ###for post-select replicate 1
       if($expID[0] ~~ @exp3){
         if($pos ~~ [$region[0]..$region[1]]){
@@ -265,7 +266,7 @@ foreach my $filename (@filenames){
           $select1raw{$mut_codon} += $countraw;
         }
       }
-      
+
       ###for post-select replicate 2
       if($expID[0] ~~ @exp4){
         if($pos ~~ [$region[0]..$region[1]]){
@@ -273,7 +274,7 @@ foreach my $filename (@filenames){
           $select2raw{$mut_codon} += $countraw;
         }
       }
-      
+
       ###for wt-control Nonselect replicate 1
       if($expID[0] ~~ @exp5){
         if($pos ~~ [$region[0]..$region[1]]){
@@ -281,7 +282,7 @@ foreach my $filename (@filenames){
           $controlNS1raw{$mut_codon} += $countraw;
         }
       }
-      
+
       ###for wt-control Nonselect replicate 2
       if($expID[0] ~~ @exp6){
         if($pos ~~ [$region[0]..$region[1]]){
@@ -289,7 +290,7 @@ foreach my $filename (@filenames){
           $controlNS2raw{$mut_codon} += $countraw;
         }
       }
-      
+
       ###for wt-control select replicate 1
       if($expID[0] ~~ @exp7){
         if($pos ~~ [$region[0]..$region[1]]){
@@ -297,7 +298,7 @@ foreach my $filename (@filenames){
           $controlS1raw{$mut_codon} += $countraw;
         }
       }
-      
+
       ###for wt-control select replicate 2
       if($expID[0] ~~ @exp8){
         if($pos ~~ [$region[0]..$region[1]]){
@@ -309,7 +310,7 @@ foreach my $filename (@filenames){
     close IM;
    }
   }
-  
+
 }
 #####################################################
 
@@ -430,7 +431,7 @@ close $fhraw;
 ####################################################
 
 ####################################################
-###calcualte the average normalized mutational counts 
+###calcualte the average normalized mutational counts
 foreach my $mut (keys %nonselect1){
     if($nonselect2{$mut}){
       $average_nonselect{$mut} = ($nonselect1{$mut}+$nonselect2{$mut})/2;
@@ -464,19 +465,19 @@ my %sd_nonselect_sub;
 my %sd_select_sub;
 
 foreach my $mut (keys %average_nonselect){
-  
+
     ###calculate nonselect_sub
     if($average_nonselect{$mut}>$average_controlNS{$mut}+3*$sd_controlNS{$mut}){
-      $nonselect_sub{$mut} = $average_nonselect{$mut} - $average_controlNS{$mut};   
+      $nonselect_sub{$mut} = $average_nonselect{$mut} - $average_controlNS{$mut};
       $sd_nonselect_sub{$mut} = ($sd_nonselect{$mut}**2 + $sd_controlNS{$mut}**2 )**0.5;
-    }  
-   
+    }
+
     ####calculate select_sub
     if($average_select{$mut}+3*$sd_select{$mut}>=$average_controlNS{$mut}-3*$sd_controlNS{$mut}){
       $select_sub{$mut} = abs($average_select{$mut} - $average_controlS{$mut});
       $sd_select_sub{$mut} = ($sd_select{$mut}**2 + $sd_controlS{$mut}**2 )**0.5;
-    } 
-           
+    }
+
 }
 #####################################################
 
@@ -510,7 +511,7 @@ foreach my $mut (keys %foldchange){
   }
   if($nonselect_sub{$mut}>$n_sub){
     print $fh "$mut\t$nonselect_sub{$mut}\t$sd_nonselect_sub{$mut}\t$CVnonselect\t$sd_select_sub{$mut}\t$CVselect\t$sd_foldchange{$mut}\t$CVfoldchange\t$foldchange{$mut}\n";
-  }  
+  }
 }
 close $fh;
 #####################################################
@@ -524,7 +525,7 @@ foreach my $mut (keys %nonselect_sub){
     my @a = split(/\t/,$mut);
     if($a[3] eq 'NONSYN'){
       $totalCounts += $nonselect_sub{$mut};
-    }  
+    }
   }
 }
 
@@ -543,9 +544,9 @@ print 'The nonsynonymous frequency is: ',$totalCounts/$depth_norm,"\n";
   my $seqfilefullName = "$ARGV[2]";
   my @seqfileName = split(/\//,$seqfilefullName);
   my @Name = split(/\_/,$seqfileName[$#seqfileName]);
-  $geneName = $Name[0];  
+  $geneName = $Name[0];
   ###open the geneName_seq.txt file and assign sequence and upstream length
-  open(IN,$ARGV[2]) or die "Could not open file geneName_seq.txt $!"; 
+  open(IN,$ARGV[2]) or die "Could not open file geneName_seq.txt $!";
   while(<IN>){
     my @a = split;
     if(/template/){
@@ -588,7 +589,7 @@ my $seq_AA;
 for(my $i=0; $i<length($seq_nt)/3; $i++){
   if(codon2aa(substr($seq_nt,3*$i,3)) ne '_'){
     $seq_AA .= codon2aa(substr($seq_nt,3*$i,3));
-  }  
+  }
 }
 ###for the examined region, generate a hash with all the possible AA changes in the format as three-letter string as (aa_wt,position,aa_mut), for example, D5W
 my %allAAchange;
@@ -682,7 +683,7 @@ closedir $dh;
 
 foreach my $filename (@filenames){
   #####for mutations#####
-  if($filename =~ /\S+AAchange.txt/){ 
+  if($filename =~ /\S+AAchange.txt/){
    my @expID = split(/AAchange/,$filename);
    if($nonPrimingRegion{$expID[0]}){
     open(IM,"$dir/mutationCallfile/$filename");
@@ -698,11 +699,11 @@ foreach my $filename (@filenames){
       }else{
         $mutationType = 'NONSYN';
       }
-      
+
       my $mut = $a[0]."\t".$a[1]."\t".$a[2]."\t".$mutationType;
-      # 
+      #
       my $mut_codon = $a[0]."\t".$a[1]."\t".$a[2]."\t".$a[3]."\t".$a[4]."\t".$mutationType;
-      
+
       my $mut_pop = '';
       my $mut_1nt = '';
       my $det_pop = 0;
@@ -716,9 +717,9 @@ foreach my $filename (@filenames){
       } elsif ($det_pop = 2){ # if two nt mapped (means there is 1nt change)
         $mut_1nt = $mut_codon;
       }
-      
+
       my @region = @{$nonPrimingRegion{$expID[0]}};
-      
+
       ###for pre-select replicate 1
       if($expID[0] ~~ @exp1){
         if($pos ~~ [$region[0]..$region[1]]){
@@ -726,13 +727,13 @@ foreach my $filename (@filenames){
           $replicate1nt{$mut_codon} += $count;
           if($mut_pop){
             $replicate1POP{$mut_pop} += $count;
-          } 
+          }
           if($mut_1nt){
             $replicate1nt_acc{$mut_1nt} += $count;
           }
         }
       }
-      
+
       ###for pre-select reicate 2
       if($expID[0] ~~ @exp2){
         if($pos ~~ [$region[0]..$region[1]]){
@@ -754,7 +755,7 @@ foreach my $filename (@filenames){
   }
 
   #####for deletions#####
-  if($filename =~ /\S+deletion.txt/){ 
+  if($filename =~ /\S+deletion.txt/){
    my @expID = split(/deletion/,$filename);
    if($nonPrimingRegion{$expID[0]}){
     open(IM,"$dir/mutationCallfile/$filename");
@@ -767,14 +768,14 @@ foreach my $filename (@filenames){
       my $mut = $a[0];
 
       my @region = @{$nonPrimingRegion{$expID[0]}};
-      
+
       ###for pre-select replicate 1
       if($expID[0] ~~ @exp1){
         if($pos_min ~~ [(3*$region[0]-2)..(3*$region[1])] && $pos_max ~~ [(3*$region[0]-2)..(3*$region[1])]){
           $replicate1Del{$mut} += $count;
         }
       }
-      
+
       ###for pre-select replicate 2
       if($expID[0] ~~ @exp2){
         if($pos_min ~~ [(3*$region[0]-2)..(3*$region[1])] && $pos_max ~~ [(3*$region[0]-2)..(3*$region[1])]){
@@ -790,7 +791,7 @@ foreach my $filename (@filenames){
 #####################################################
 
 ####################################################
-###calcualte the average normalized mutational and deletion counts 
+###calcualte the average normalized mutational and deletion counts
 foreach my $mut (keys %replicate1){
     if($replicate2{$mut}){
       $average_replicate{$mut} = ($replicate1{$mut}+$replicate2{$mut})/2;
@@ -819,7 +820,7 @@ foreach my $mut (keys %replicate1POP){
     }
 }
 
-# 1-nt accessible change 
+# 1-nt accessible change
 foreach my $mut (keys %replicate1nt_acc){
     if($replicate2nt_acc{$mut}){
       $average_replicatent_acc{$mut} = ($replicate1nt_acc{$mut}+$replicate2nt_acc{$mut})/2;
@@ -907,7 +908,7 @@ for(my $i=1; $i<=$n_regions; $i++){
       }
     }
   }
-  
+
   # added for 1nt change (RL)
   foreach my $mut (keys %average_replicatent_acc){
     my @a = split(/\t/,$mut);
@@ -945,18 +946,18 @@ for(my $i=1; $i<=$n_regions; $i++){
       }
     }
   }
-  
+
   foreach my $mut (keys %average_replicatePOP){
     my @a = split(/\t/,$mut);
     if($a[1] ~~ [$region[0]..$region[1]]){
       $POP_total += $average_replicatePOP{$mut};
-    }  
+    }
   }
   foreach my $mut (keys %average_replicate){
     my @a = split(/\t/,$mut);
     if($a[1] ~~ [$region[0]..$region[1]]){
       $mutation_total += $average_replicate{$mut};
-    }  
+    }
   }
 
   foreach my $mut (keys %average_replicateDel){
@@ -974,7 +975,7 @@ for(my $i=1; $i<=$n_regions; $i++){
   $prob_noDel *= (1-$del_counts);
   push(@start_aa,$region[0]);
   push(@end_aa,$region[1]);
-  
+
 }
 for(my $i=0; $i<$n_regions; $i++){
   $length_aa += ($end_aa[$i]-$start_aa[$i]+1);
@@ -1018,7 +1019,7 @@ print $fhfreq "frequency per million = frequency * 10^6\n\n";
 # for(my $i=0; $i<$n_regions; $i++){
 #   print $fhfreq $start_aa[$i],'-',$end_aa[$i],',';
 # }
-# explain the columns 
+# explain the columns
 print $fhfreq "mut_freq = Sum of frequencies of all mutations in the given tile\n";
 print $fhfreq "del_freq = Sum of frequencies of all deletions in the given tile\n";
 print $fhfreq "seq_depth = Total number of reads mapped / 1000\n";
@@ -1072,7 +1073,7 @@ close $fhfreq;
 ###fill up the four positonal mutation/deletion counts hashes###
 foreach my $mut (keys %average_replicatent){
   my @a = split(/\t/,$mut);
-  
+
   my $seq_dep;
   for(my $i=1; $i<=$n_regions; $i++){
     my @region = @{$regions_nonpriming{$i}};
@@ -1081,7 +1082,7 @@ foreach my $mut (keys %average_replicatent){
     }
   }
   my $count_threshold = 1/$seq_dep;
-  
+
   my $det_pop = 0;
   for(my $i=0; $i<3; $i++){
     if(substr($a[3],$i,1) eq substr($a[4],$i,1)){
@@ -1153,7 +1154,7 @@ sub median
 sub average{
         my @data = @_;
         if (not @data) {
-               die("Empty arrayn");
+               die("Empty array");
         }
         my $total = 0;
         foreach (@data) {
@@ -1186,9 +1187,9 @@ sub covariance {
     if (@$array2ref != @$array1ref) {
         die("unequal length of arrays");
     }
-    
+
     my $result;
-    
+
     for(my $i=0; $i<@$array1ref; $i++){
       $result += ($array1ref->[$i]-average(@$array1ref))*($array2ref->[$i]-average(@$array2ref));
     }
@@ -1295,4 +1296,3 @@ sub AAaccessible_sub1nt{
 
 }
 ##############################################################
-
